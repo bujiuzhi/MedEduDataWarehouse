@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/dwd_teaching_activity.sql" dialect="HiveQL" />
+    <file url="file://$PROJECT_DIR$/dws_teaching_activity.sql" dialect="HiveQL" />
+    <file url="file://$PROJECT_DIR$/report_dws.sql" dialect="HiveQL" />
+    <file url="file://$PROJECT_DIR$/test.sql" dialect="GenericSQL" />
+    <file url="PROJECT" dialect="HiveQL" />
+  </component>
+</project>
