@@ -30,7 +30,16 @@
 CREATE DATABASE IF NOT EXISTS dwd_hainan_hospital_info;
 
 /*
-    教学活动明细表 dwd_teaching_activity_detail_df
+    教学活动明细表
+    数据库表名：dwd_teaching_activity_detail_df
+    清洗逻辑：
+        1. 清洗每个字段的换行符（[\r\n]），使用 `regexp_replace` 去除换行符。
+        2. 对空值进行处理，使用 `coalesce` 函数替换空值字段为默认值（如 '其他' 或 -1）。
+        3. 保证 `trainid` 非空且大于等于0。
+    计算逻辑：
+        - 使用 `UNION ALL` 将来自三个医院的数据合并，生成统一的教学活动明细表。
+        - 每个活动的 ID 由医院 ID 和 `trainid` 组成，保证活动唯一性。
+        - 该表用于记录教学活动的基本信息，包括活动名称、活动类型、开始时间、结束时间、持续时长等。
 */
 -- 教学活动明细表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_detail_df;
@@ -128,7 +137,16 @@ FROM (
            AND trainid >= 0) AS combined_data;
 
 /*
-    教学活动参与人员明细表 dwd_teaching_activity_person_detail_df
+    教学活动参与人员明细表
+    数据库表名：dwd_teaching_activity_person_detail_df
+    清洗逻辑：
+        1. 清洗人员名字、人员类型、职称等字段的换行符（[\r\n"]）。
+        2. 对空值进行处理，使用 `coalesce` 函数替换空值字段为默认值（如 '其他'）。
+        3. 保证 `trainid` 非空且大于等于0。
+        4. 确保人员ID不为空且大于等于0。
+    计算逻辑：
+        - 使用 `UNION ALL` 将来自三个医院的数据合并，生成统一的教学活动参与人员明细表。
+        - 该表用于记录每个教学活动中参与人员的详细信息，包括人员 ID、名字、类型、职称、评分、签到状态等。
 */
 -- 教学活动参与人员明细表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df;
@@ -205,7 +223,15 @@ FROM (
            AND trainid >= 0) AS combined_data;
 
 /*
-    教学活动附件明细表   dwd_teaching_activity_file_detail_df
+    教学活动附件明细表
+    数据库表名：dwd_teaching_activity_file_detail_df
+    清洗逻辑：
+        1. 清洗附件类型、URL、文件名字段的换行符（[\r\n"]）。
+        2. 对空值进行处理，使用 `coalesce` 函数替换空值字段为默认值（如 '其他'）。
+        3. 保证 `trainid` 非空且大于等于0。
+    计算逻辑：
+        - 使用 `UNION ALL` 将来自三个医院的数据合并，生成统一的教学活动附件明细表。
+        - 该表用于记录与教学活动相关的附件信息，包括附件类型、文件 URL 和文件名称。
 */
 -- 教学活动附件明细表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_file_detail_df;
@@ -267,7 +293,15 @@ FROM (
            AND trainid >= 0) AS combined_data;
 
 /*
-    教学活动学员签到宽表  dwd_teaching_activity_student_sign_wide_df
+    教学活动学员签到宽表
+    数据库表名：dwd_teaching_activity_student_sign_wide_df
+    清洗逻辑：
+        1. 通过 `JOIN` 将学员签到信息与教学活动明细表关联。
+        2. 仅选择学员类型的参与人员（`person_type = '学员'`）。
+        3. 使用 `date_format` 将签到时间格式化为 "yyyy-MM"。
+    计算逻辑：
+        - 将每个学员的签到状态和签到日期作为宽表字段，生成每个学员在不同教学活动中的签到记录。
+        - 为每个学员生成唯一的签到记录，包括学员的 ID、姓名、是否签到和签到日期。
 */
 -- 教学活动学员签到宽表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df;
@@ -319,7 +353,15 @@ WHERE p.person_type = '学员';
 
 
 /*
-    教学活动学员评价宽表  dwd_teaching_activity_student_evaluation_wide_df
+    教学活动学员评价宽表
+    数据库表名：dwd_teaching_activity_student_evaluation_wide_df
+    清洗逻辑：
+        1. 通过 `JOIN` 将学员评价信息与教学活动明细表关联。
+        2. 仅选择学员类型的参与人员（`person_type = '学员'`）。
+        3. 保证学员评价得分率为有效值。
+    计算逻辑：
+        - 将每个学员的评价得分与教学活动相关的其他信息一起生成宽表。
+        - 记录每个学员的评价得分、所属教学活动、医院、专业等信息。
 */
 -- 教学活动学员评价宽表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df;
@@ -370,7 +412,14 @@ FROM dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df p
 WHERE p.person_type = '学员';
 
 /*
-    教学活动老师明细宽表    dwd_teaching_activity_teacher_detail_wide_df
+    教学活动老师明细宽表
+    数据库表名：dwd_teaching_activity_teacher_detail_wide_df
+    清洗逻辑：
+        1. 通过 `JOIN` 将老师信息与教学活动明细表关联。
+        2. 仅选择老师类型的参与人员（`person_type = '老师'`）。
+    计算逻辑：
+        - 将每个老师的信息与教学活动相关的其他信息一起生成宽表。
+        - 记录每个老师的职称、所属教学活动、医院、专业等信息。
 */
 -- 教学活动老师明细宽表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_teacher_detail_wide_df;

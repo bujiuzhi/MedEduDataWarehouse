@@ -1,7 +1,7 @@
 /*===================================================================
 dws层数据整理：
 目前已有表：
-    教学活动入院教育覆盖率按年统计 dws_teaching_activity_hospital_education_coverage_by_year
+    教学活动入院教育覆盖率按年统计表 dws_teaching_activity_hospital_education_coverage_by_year
     教学活动入专业基地教育覆盖率按年按医院统计表  dws_teaching_activity_major_education_coverage_by_year_hospital
     教学活动开展数量按医院按年统计表 dws_teaching_activity_count_by_hospital_year
     教学活动开展数量按医院按专业按月统计表 dws_teaching_activity_count_by_hospital_major_month
@@ -21,7 +21,15 @@ dws层数据整理：
 CREATE DATABASE IF NOT EXISTS dws_hainan_hospital_info;
 
 /*
-    教学活动入院教育覆盖率按年统计 dws_teaching_activity_hospital_education_coverage_by_year
+    教学活动入院教育覆盖率按年统计
+    数据库表名：dws_teaching_activity_hospital_education_coverage_by_year
+    清洗逻辑：
+        1. 仅包含 2019 年及以后数据。
+        2. 获取每年实际招录学生的医院数与开展入院教育的医院数。
+    计算逻辑：
+        粒度：按年度（year）
+        入院教育覆盖率 = （开展入院教育的医院数 / 实际招录学生的医院数） * 100%
+        计算：`(hospital_education_count / hospital_admitted_count) * 100`
 */
 
 -- 教学活动入院教育覆盖率按年统计表：删除旧的（如果存在）
@@ -66,7 +74,15 @@ FROM (
      ON a.year = b.year;
 
 /*
-    教学活动入专业基地教育覆盖率按年按医院统计表  dws_teaching_activity_major_education_coverage_by_year_hospital
+    教学活动入专业基地教育覆盖率按年按医院统计
+    数据库表名：dws_teaching_activity_major_education_coverage_by_year_hospital
+    清洗逻辑：
+        1. 仅包含 2019 年及以后数据。
+        2. 获取每年每家医院实际招录的专业数与开展入专业基地教育的专业数。
+    计算逻辑：
+        粒度：按年度（year） + 医院（hospital_id）
+        入专业基地教育覆盖率 = （开展入专业基地教育的专业数 / 实际招录专业的专业数） * 100%
+        计算：`(major_education_count / major_admitted_count) * 100`
 */
 
 -- 教学活动入专业基地教育覆盖率按年按医院统计表：删除旧的（如果存在）
@@ -122,7 +138,13 @@ FROM (
 
 
 /*
-    教学活动开展数量按医院按年统计表 dws_teaching_activity_count_by_hospital_year
+    教学活动开展数量按医院按年统计
+    数据库表名：dws_teaching_activity_count_by_hospital_year
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+    计算逻辑：
+        粒度：按医院（hospital_id）+ 年度（year）
+        计算：`count(*)` 表示该医院每年开展的教学活动数量
 */
 
 -- 教学活动开展数量按医院按年统计表：删除旧的（如果存在）
@@ -151,7 +173,13 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, year(start_time);
 
 /*
-    教学活动开展数量按医院按专业按月统计表 dws_teaching_activity_count_by_hospital_major_month
+    教学活动开展数量按医院按专业按月统计
+    数据库表名：dws_teaching_activity_count_by_hospital_major_month
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+    计算逻辑：
+        粒度：按医院（hospital_id）+ 专业（major_id）+ 月度（month）
+        计算：`count(1)` 表示该医院每月在每个专业的教学活动数量
 */
 
 -- 教学活动开展数量按医院按专业按月统计表：删除旧的（如果存在）
@@ -184,7 +212,14 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, major_id, major_name, date_format(start_time, 'yyyy-MM');
 
 /*
-    教学活动临床小讲课开展数量按医院按专业按年统计表    dws_teaching_activity_clinical_lecture_by_hospital_major_year
+    教学活动临床小讲课开展数量按医院按专业按年统计
+    数据库表名：dws_teaching_activity_clinical_lecture_by_hospital_major_year
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+        且仅考虑活动类型为“临床小讲课”。
+    计算逻辑：
+        粒度：按医院（hospital_id）+ 专业（major_id）+ 年度（year）
+        计算：`count(1)` 表示该医院每年在每个专业的临床小讲课数量
 */
 
 -- 教学活动临床小讲课开展数量按医院按专业按年统计表：删除旧的（如果存在）
@@ -219,7 +254,14 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, major_id, major_name, year(start_time);
 
 /*
-    教学活动门诊教学开展数量按医院按专业按年统计表    dws_teaching_activity_outpatient_by_hospital_major_year
+    教学活动门诊教学开展数量按医院按专业按年统计
+    数据库表名：dws_teaching_activity_outpatient_by_hospital_major_year
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+        且仅考虑活动类型为“门诊教学”。
+    计算逻辑：
+        粒度：按医院（hospital_id）+ 专业（major_id）+ 年度（year）
+        计算：`count(1)` 表示该医院每年在每个专业的门诊教学数量
 */
 
 -- 教学活动门诊教学开展数量按医院按专业按年统计表：删除旧的（如果存在）
@@ -254,7 +296,15 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, major_id, major_name, year(start_time);
 
 /*
-  教学活动评价次数统计按医院按年统计表 dws_teaching_activity_evaluation_count_by_hospital_year
+    教学活动评价次数统计按医院按年统计
+    数据库表名：dws_teaching_activity_evaluation_count_by_hospital_year
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+    计算逻辑：
+        粒度：按医院（hospital_id）+ 年度（year）
+        实际评价次数 = 非空的 `evaluation_score` 计数
+        评价回收率 = (实际评价次数 / 应评价总数) * 100
+        计算：`(evaluation_count / total_count) * 100`
 */
 
 -- 教学活动评价次数统计按医院按年统计表：删除旧的（如果存在）
@@ -288,7 +338,13 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, year(start_time);
 
 /*
-    教学活动开展次数按类型按天统计表 dws_teaching_activity_count_by_type_day
+    教学活动开展次数按类型按天统计
+    数据库表名：dws_teaching_activity_count_by_type_day
+    清洗逻辑：
+        仅包含 2019 年及以后数据。
+    计算逻辑：
+        粒度：按活动类型（activity_type_id）+ 日期（day）
+        计算：`count(1)` 表示每个活动类型在某一天的教学活动数量
 */
 
 -- 教学活动开展次数按类型按天统计表：删除旧的（如果存在）
@@ -315,6 +371,8 @@ SELECT activity_type_id
 FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 WHERE year(start_time) >= 2019
 GROUP BY activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM-dd');
+
+
 
 
 
