@@ -9,7 +9,7 @@ dws层数据整理：
     教学活动_临床小讲课开展数量按医院按专业按年统计表	dws_teaching_activity_clinical_lecture_by_hospital_major_year
     教学活动_门诊教学开展数量按医院按专业按年统计表	dws_teaching_activity_outpatient_by_hospital_major_year
     教学活动_评价次数统计按医院按年统计表	dws_teaching_activity_evaluation_count_by_hospital_year
-    教学活动_开展次数按类型按月统计表	dws_teaching_activity_count_by_type_month
+    教学活动_开展次数按专业按类型按月统计表	dws_teaching_activity_count_by_major_type_month
     教学活动_已招录学生但无活动记录按医院按年统计表	dws_teaching_activity_admission_students_no_activity_by_hospital_year
     教学活动_轮转学员教学活动数按医院按月统计表	dws_teaching_activity_round_student_activity_count_by_hospital_month
     教学活动_轮转学员在当月没有教学活动记录按医院按月统计表	dws_teaching_activity_round_student_no_activity_by_hospital_month
@@ -347,36 +347,40 @@ WHERE year(start_time) >= 2019
 GROUP BY hospital_id, hospital_name, year(start_time);
 
 /*
-中文表名：教学活动_开展次数按类型按月统计表
-数据库表名：dws_teaching_activity_count_by_type_month
+中文表名：教学活动_开展次数按专业按类型按月统计表
+数据库表名：dws_teaching_activity_count_by_major_type_month
 源数据表：
     - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 */
 
--- 教学活动_开展次数按类型按月统计表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_count_by_type_month;
+-- 教学活动_开展次数按专业按类型按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_count_by_major_type_month;
 
--- 教学活动_开展次数按类型按月统计表：创建
-CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_type_month
+-- 教学活动_开展次数按专业按类型按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_major_type_month
 (
+    major_id           INT COMMENT '专业ID',
+    major_name         STRING COMMENT '专业名称',
     activity_type_id   INT COMMENT '教学活动类型ID',
     activity_type_name STRING COMMENT '教学活动类型名称',
     month              STRING COMMENT '统计月份',
     activity_count     INT COMMENT '该月该类型的教学活动数量'
-) COMMENT '教学活动_开展次数按类型按月统计表';
+) COMMENT '教学活动_开展次数按专业按类型按月统计表';
 
--- 教学活动_开展次数按类型按月统计表：清空数据
-TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_type_month;
+-- 教学活动_开展次数按专业按类型按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_major_type_month;
 
--- 教学活动_开展次数按类型按月统计表：插入数据
-INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_type_month
-SELECT activity_type_id
+-- 教学活动_开展次数按专业按类型按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_major_type_month
+SELECT major_id
+     , major_name
+     , activity_type_id
      , activity_type_name
      , date_format(start_time, 'yyyy-MM') AS month
      , count(1)                           AS activity_count
 FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 WHERE year(start_time) >= 2019
-GROUP BY activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM');
+GROUP BY major_id, major_name, activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM');
 
 
 /*
