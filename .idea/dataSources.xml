@@ -9,5 +9,12 @@
       <working-dir>$ProjectFileDir$</working-dir>
       <init-script>SET hive.execution.engine=mr;  SET mapreduce.task.io.sort.mb = 1000;</init-script>
     </data-source>
+    <data-source source="LOCAL" name="jiuhua-mysql" uuid="9254c1b5-2239-4b52-847c-fccfe6860c04">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://119.23.228.217:3306/warehouse</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
