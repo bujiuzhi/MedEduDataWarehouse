@@ -362,7 +362,7 @@ CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_type_month
     activity_type_id   INT COMMENT '教学活动类型ID',
     activity_type_name STRING COMMENT '教学活动类型名称',
     month              STRING COMMENT '统计月份',
-    activity_count     INT COMMENT '该天该类型的教学活动数量'
+    activity_count     INT COMMENT '该月该类型的教学活动数量'
 ) COMMENT '教学活动_开展次数按类型按月统计表';
 
 -- 教学活动_开展次数按类型按月统计表：清空数据
@@ -502,7 +502,7 @@ SELECT hospital_id
      , count(CASE WHEN activity_count = 0 THEN student_name END)                                                               AS no_activity_student_count
      , concat(round(count(CASE WHEN activity_count = 0 THEN student_name END) * 100.0 / count(DISTINCT student_name), 2), '%') AS no_activity_student_rate
 FROM dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
-GROUP BY month, hospital_id, hospital_name;
+GROUP BY hospital_id, hospital_name, month;
 
 /*
 中文表名：教学活动_日均数据按医院按年统计表
@@ -535,15 +535,14 @@ INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_daily_data_by_hospita
 SELECT a.hospital_id
      , a.hospital_name
      , a.year
-     , round(sum(activity_count) / 365, 2)   AS daily_activity
-     , round(sum(student_count) / 365, 2)    AS daily_student
-     , round(sum(evaluation_count) / 365, 2) AS daily_evaluation
+     , round(a.activity_count / 365, 2)   AS daily_activity
+     , round(b.student_count / 365, 2)    AS daily_student
+     , round(c.evaluation_count / 365, 2) AS daily_evaluation
 FROM dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year a
-         JOIN dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year b
-              ON a.hospital_id = b.hospital_id
-                  AND a.year = b.year
-         JOIN dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_year c
-              ON a.hospital_id = c.hospital_id
-                  AND a.year = c.year
-GROUP BY a.year, a.hospital_id, a.hospital_name;
+         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year b
+                   ON a.hospital_id = b.hospital_id
+                       AND a.year = b.year
+         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_year c
+                   ON a.hospital_id = c.hospital_id
+                       AND a.year = c.year;
 
