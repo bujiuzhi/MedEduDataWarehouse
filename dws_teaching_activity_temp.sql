@@ -10,11 +10,11 @@ dws层数据整理：
     教学活动_入院教育覆盖率按年统计表	dws_teaching_activity_hospital_education_coverage_by_year
     教学活动_入专业基地教育覆盖率按医院按年统计表	dws_teaching_activity_major_education_coverage_by_hospital_year
     教学活动_已招录学生但无活动记录按医院按年统计表	dws_teaching_activity_admission_students_no_activity_by_hospital_year
-    教学活动_轮转学员教学活动数按医院按月统计表	dws_teaching_activity_round_student_activity_count_by_hospital_month
+    教学活动_轮转学员教学活动情况按医院按月统计表  dws_teaching_activity_round_student_activity_count_by_hospital_month
     教学活动_轮转学员没有教学活动记录的人数按医院按月统计表	dws_teaching_activity_round_no_activity_student_count_by_hospital_month
     教学活动_轮转学员不在本科室上课的学员数按医院按月统计表  dws_teaching_activity_round_no_class_student_count_by_hospital_month
     教学活动_全科专业和门诊教学相关指标按医院按月统计表  dws_teaching_activity_general_practice_outpatient_education_by_hospital_month
-    教学活动_名称不规范相关指标按医院按月统计表 dws_teaching_activity_name_irregular_count_by_hospital_month
+    教学活动_名称不规范相关指标按医院按专业按月统计表 dws_teaching_activity_name_irregular_count_by_hospital_major_month
     教学活动_日均数据按医院按年统计表	dws_teaching_activity_daily_data_by_hospital_year
 
 ====================================================================*/
@@ -403,42 +403,43 @@ WHERE s.admission_year >= 2019
 GROUP BY s.training_base_id, s.training_base, s.admission_year;
 
 /*
-中文表名：教学活动_轮转学员教学活动数按医院按月统计表
+中文表名：教学活动_轮转学员教学活动情况按医院按月统计表
 数据库表名：dws_teaching_activity_round_student_activity_count_by_hospital_month
 源数据表：
     - dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
 */
 
--- 教学活动_轮转学员教学活动数按医院按月统计表：删除旧的（如果存在）
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：删除旧的（如果存在）
 DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month;
 
--- 教学活动_轮转学员教学活动数按医院按月统计表：创建
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：创建
 CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
 (
-    hospital_id    INT COMMENT '医院ID',
-    hospital_name  STRING COMMENT '医院名称',
-    month          STRING COMMENT '月份',
-    student_name   STRING COMMENT '学生姓名',
-    activity_count INT COMMENT '教学活动数量'
-) COMMENT '教学活动_轮转学员教学活动数按医院按月统计表';
+    hospital_id       INT COMMENT '医院ID',
+    hospital_name     STRING COMMENT '医院名称',
+    month             STRING COMMENT '月份',
+    student_name      STRING COMMENT '学生姓名',
+    rotation_office   STRING COMMENT '轮转科室',
+    activity_count    INT COMMENT '教学活动次数',
+    class_count       INT COMMENT '本科室上课次数',
+    other_class_count INT COMMENT '其他科室上课次数'
+) COMMENT '教学活动_轮转学员教学活动情况按医院按月统计表';
 
--- 教学活动_轮转学员教学活动数按人按医院按月统计表：清空数据
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：清空数据
 TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month;
 
--- 教学活动_轮转学员教学活动数按人按医院按月统计表：插入数据
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：插入数据
 INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
 SELECT hospital_id
      , hospital_name
-     , rotation_month              AS month
+     , rotation_month                                                                    AS month
      , student_name
-     , count(DISTINCT activity_id) AS activity_count
+     , rotation_office
+     , count(DISTINCT activity_id)                                                       AS activity_count
+     , count(DISTINCT CASE WHEN rotation_office = activity_office THEN activity_id END)  AS class_count
+     , count(DISTINCT CASE WHEN rotation_office != activity_office THEN activity_id END) AS other_class_count
 FROM dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
-WHERE rotation_month = activity_month
-   OR activity_month IS NULL
-GROUP BY hospital_id
-       , hospital_name
-       , rotation_month
-       , student_name;
+GROUP BY hospital_id, hospital_name, rotation_month, student_name, rotation_office;
 
 /*
 中文表名：教学活动_轮转学员没有教学活动记录的人数按医院按月统计表
@@ -556,44 +557,50 @@ FROM dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type
 GROUP BY hospital_id, hospital_name, month;
 
 /*
-中文表名：教学活动_名称不规范相关指标按医院按月统计表
-数据库表名：dws_teaching_activity_name_irregular_count_by_hospital_month
+中文表名：教学活动_名称不规范相关指标按医院按专业按月统计表
+数据库表名：dws_teaching_activity_name_irregular_count_by_hospital_major_month
 源数据表：
     - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 */
 
--- 教学活动_名称不规范相关指标按医院按月统计表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_month;
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month;
 
--- 教学活动_名称不规范相关指标按医院按月统计表：创建
-CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_month
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month
 (
     hospital_id                   INT COMMENT '医院ID',
     hospital_name                 STRING COMMENT '医院名称',
+    major_id                      INT COMMENT '专业ID',
+    major_name                    STRING COMMENT '专业名称',
     month                         STRING COMMENT '月份',
     activity_name_type_same_count INT COMMENT '本月内单个教学活动的活动名称和类型名称重名的教学活动数',
     activity_name_type_same_total INT COMMENT '本月内不同教学活动但同类型同名称的教学活动数'
-) COMMENT '教学活动_名称不规范相关指标按医院按月统计表';
+) COMMENT '教学活动_名称不规范相关指标按医院按专业按月统计表';
 
--- 教学活动_名称不规范相关指标按医院按月统计表：清空数据
-TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_month;
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month;
 
--- 教学活动_名称不规范相关指标按医院按月统计表：插入数据
-INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_month
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month
 SELECT grouped.hospital_id
      , grouped.hospital_name
+     , grouped.major_id
+     , grouped.major_name
      , grouped.month
      , sum(CASE WHEN grouped.activity_name = grouped.activity_type_name THEN grouped.activity_count ELSE 0 END) AS activity_name_type_same_count
-     , sum(CASE WHEN grouped.activity_count > 1 THEN grouped.activity_count END)                                AS activity_name_type_same_total
-FROM (SELECT d.hospital_id
-           , d.hospital_name
-           , date_format(d.start_time, 'yyyy-MM') AS month
-           , d.activity_name
-           , d.activity_type_name
-           , count(*)                             AS activity_count
-      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df d
-      GROUP BY d.hospital_id, d.hospital_name, date_format(d.start_time, 'yyyy-MM'), d.activity_name, d.activity_type_name) AS grouped
-GROUP BY grouped.hospital_id, grouped.hospital_name, grouped.month;
+     , sum(CASE WHEN grouped.activity_count > 1 THEN grouped.activity_count ELSE 0 END)                         AS activity_name_type_same_total
+FROM (SELECT hospital_id
+           , hospital_name
+           , major_id
+           , major_name
+           , date_format(start_time, 'yyyy-MM') AS month
+           , activity_name
+           , activity_type_name
+           , count(DISTINCT activity_id)        AS activity_count
+      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+      GROUP BY hospital_id, hospital_name, major_id, major_name, date_format(start_time, 'yyyy-MM'), activity_name, activity_type_name) AS grouped
+GROUP BY grouped.hospital_id, grouped.hospital_name, grouped.major_id, grouped.major_name, grouped.month;
 
 /*
 中文表名：教学活动_日均数据按医院按年统计表
