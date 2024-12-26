@@ -1,15 +1,15 @@
-SELECT a.hospital_id
-     , a.hospital_name
-     , a.year
-     , a.activity_count
-     , b.student_count
-     , c.evaluation_count
-     , c.total_count
-     , c.evaluation_rate
-FROM dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year a
-         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year b
-                   ON a.hospital_id = b.hospital_id
-                       AND a.year = b.year
-         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_year c
-                   ON a.hospital_id = c.hospital_id
-                       AND a.year = c.year;
+
+SELECT grouped.hospital_id
+     , grouped.hospital_name
+     , grouped.month
+     , sum(CASE WHEN grouped.activity_name = grouped.activity_type_name THEN grouped.activity_count ELSE 0 END) AS activity_name_type_same_count
+     , sum(CASE WHEN grouped.activity_count > 1 THEN grouped.activity_count END)                                AS activity_name_type_same_total
+FROM (SELECT d.hospital_id
+           , d.hospital_name
+           , date_format(d.start_time, 'yyyy-MM') AS month
+           , d.activity_name
+           , d.activity_type_name
+           , count(*)                             AS activity_count
+      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df d
+      GROUP BY d.hospital_id, d.hospital_name, date_format(d.start_time, 'yyyy-MM'), d.activity_name, d.activity_type_name) AS grouped
+GROUP BY grouped.hospital_id, grouped.hospital_name, grouped.month;
