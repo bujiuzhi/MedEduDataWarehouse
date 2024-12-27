@@ -19,6 +19,7 @@
         教学活动_学员评价宽表  dwd_teaching_activity_student_evaluation_wide_df
         教学活动_老师明细宽表    dwd_teaching_activity_teacher_detail_wide_df
         教学活动_有招录医院的入院教育明细宽表 dwd_teaching_activity_admission_hospital_education_detail_wide_df
+        教学活动_有招录医院专业基地的入专业教育明细宽表    dwd_teaching_activity_admission_hospital_major_education_detail_wide_df
         教学活动_轮转学员当月教学活动明细宽表  dwd_teaching_activity_round_student_detail_wide_df
 
 ===================================================================*/
@@ -529,6 +530,87 @@ FROM (SELECT admission_year             AS year
                    ON ad.hospital_id = ac.hospital_id AND ad.hospital_name = ac.hospital_name AND ad.year = ac.year;
 
 /*
+中文表名：教学活动_有招录医院专业基地的入专业教育明细宽表
+数据库表名：dwd_teaching_activity_admission_hospital_major_education_detail_wide_df
+源数据表：
+    - dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+*/
+
+-- 教学活动_有招录医院专业基地的入专业教育明细宽表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_major_education_detail_wide_df;
+
+-- 教学活动_有招录医院专业基地的入专业教育明细宽表：创建
+CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_major_education_detail_wide_df
+(
+    year                       INT COMMENT '年份',
+    hospital_id                INT COMMENT '医院ID',
+    hospital_name              STRING COMMENT '医院名称',
+    major_id                   INT COMMENT '专业ID',
+    major_name                 STRING COMMENT '专业名称',
+    admission_student_count    INT COMMENT '入专业基地学生人数',
+    activity_id                STRING COMMENT '教学活动ID',
+    activity_name              STRING COMMENT '教学活动名称',
+    activity_type_id           INT COMMENT '教学活动类型ID',
+    activity_type_name         STRING COMMENT '教学活动类型名称',
+    activity_office            STRING COMMENT '教学活动所属科室',
+    activity_start_time        TIMESTAMP COMMENT '教学活动开始时间',
+    activity_end_time          TIMESTAMP COMMENT '教学活动结束时间',
+    activity_duration_minutes  INT COMMENT '教学活动时长（分钟）',
+    activity_participant_count INT COMMENT '教学活动参与人数'
+) COMMENT '教学活动_有招录医院专业基地的入专业教育明细宽表';
+
+-- 教学活动_有招录医院专业基地的入专业教育明细宽表：清空数据
+TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_major_education_detail_wide_df;
+
+-- 教学活动_有招录医院专业基地的入专业教育明细宽表：插入数据
+INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_major_education_detail_wide_df
+SELECT ad.year
+     , ad.hospital_id
+     , ad.hospital_name
+     , ad.major_id
+     , ad.major_name
+     , ad.admission_student_count
+     , ac.activity_id
+     , ac.activity_name
+     , ac.activity_type_id
+     , ac.activity_type_name
+     , ac.activity_office
+     , ac.activity_start_time
+     , ac.activity_end_time
+     , ac.activity_duration_minutes
+     , ac.activity_participant_count
+FROM (SELECT admission_year             AS year
+           , training_base_id           AS hospital_id
+           , training_base              AS hospital_name
+           , specialty_base_id          AS major_id
+           , specialty_base             AS major_name
+           , count(DISTINCT student_id) AS admission_student_count
+      FROM dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students
+      WHERE admission_year >= 2019
+      GROUP BY admission_year, training_base_id, training_base, specialty_base_id, specialty_base) ad
+         LEFT JOIN (SELECT hospital_id
+                         , hospital_name
+                         , major_id                        AS activity_major_id
+                         , major_name                      AS activity_major_name
+                         , date_format(start_time, 'yyyy') AS year
+                         , activity_id
+                         , activity_name
+                         , activity_type_id
+                         , activity_type_name
+                         , office_name                     AS activity_office
+                         , start_time                      AS activity_start_time
+                         , end_time                        AS activity_end_time
+                         , duration_minutes                AS activity_duration_minutes
+                         , participant_count               AS activity_participant_count
+                    FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+                    WHERE year(start_time) >= 2019
+                      AND activity_type_id = 15
+                      AND activity_type_name = '入专业基地教育') ac
+                   ON ad.hospital_id = ac.hospital_id AND ad.hospital_name = ac.hospital_name
+                       AND ad.major_id = ac.activity_major_id AND ad.major_name = ac.activity_major_name AND ad.year = ac.year;
+
+/*
 中文表名：教学活动_轮转学员当月教学活动明细宽表
 数据库表名：dwd_teaching_activity_round_student_detail_wide_df
 源数据表：
@@ -544,8 +626,8 @@ CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail
 (
     hospital_id         INT COMMENT '医院ID',
     hospital_name       STRING COMMENT '医院名称',
-    major_id            INT COMMENT '专业ID',
-    major_name          STRING COMMENT '专业名称',
+    rotation_major_id   INT COMMENT '轮转专业ID',
+    rotation_major_name STRING COMMENT '轮转专业名称',
     student_id          INT COMMENT '学生ID',
     student_name        STRING COMMENT '学生名字',
     admission_year      INT COMMENT '招录年份',
@@ -557,6 +639,8 @@ CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail
     activity_name       STRING COMMENT '教学活动名称',
     activity_type_id    INT COMMENT '教学活动类型ID',
     activity_type_name  STRING COMMENT '教学活动类型名称',
+    activity_major_id   INT COMMENT '教学活动所属专业ID',
+    activity_major_name STRING COMMENT '教学活动所属专业名称',
     activity_office     STRING COMMENT '教学活动所属科室',
     activity_start_time TIMESTAMP COMMENT '教学活动开始时间',
     activity_end_time   TIMESTAMP COMMENT '教学活动结束时间',
@@ -571,8 +655,8 @@ TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_round_student_deta
 INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
 SELECT r.hospital_id
      , r.hospital_name
-     , r.major_id
-     , r.major_name
+     , r.rotation_major_id
+     , r.rotation_major_name
      , s.student_id
      , r.student_name
      , r.admission_year
@@ -584,6 +668,8 @@ SELECT r.hospital_id
      , s.activity_name
      , s.activity_type_id
      , s.activity_type_name
+     , s.major_id                           AS activity_major_id
+     , s.major_name                         AS activity_major_name
      , s.office_name                        AS activity_office
      , s.start_time                         AS activity_start_time
      , s.end_time                           AS activity_end_time
@@ -604,8 +690,8 @@ FROM (
                     WHEN hospital = '三亚中心医院（海南省第三人民医院）' THEN '三亚中心医院（海南省第三人民医院）'
                     ELSE '其他'
              END                                           AS hospital_name
-              , spt_major_id                               AS major_id
-              , spt_major_name                             AS major_name
+              , spt_major_id                               AS rotation_major_id
+              , spt_major_name                             AS rotation_major_name
               , gradeyear                                  AS admission_year
               , officename                                 AS rotation_office
               , starttime                                  AS rotation_start_time
@@ -624,6 +710,4 @@ FROM (
                    ON r.student_name = s.student_name
                        AND r.hospital_id = s.hospital_id
                        AND r.hospital_name = s.hospital_name
-                       AND r.major_id = s.major_id
-                       AND r.major_name = s.major_name
                        AND r.rotation_month = date_format(s.start_time, 'yyyy-MM');

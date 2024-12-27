@@ -1,27 +1,26 @@
 /*===================================================================
-    dwd层数据整理：
-        将多个医院的教学活动信息汇总到统一的事实表中，并进行清洗。
-        拉几张宽表，方便后续的数据分析。
+dws层数据整理：
+目前已有表：
+    教学活动_开展数量按医院按年统计表	dws_teaching_activity_count_by_hospital_year
+    教学活动_开展数量按医院按专业按月统计表	dws_teaching_activity_count_by_hospital_major_month
+    教学活动_开展数量按医院按专业按类型按月统计表   dws_teaching_activity_count_by_hospital_major_type_month
+    教学活动_参与学员数按医院按年统计表	dws_teaching_activity_student_count_by_hospital_year
+    教学活动_签到次数按医院按月统计表   dws_teaching_activity_sign_count_by_hospital_month
+    教学活动_评价次数统计按医院按月统计表	dws_teaching_activity_evaluation_count_by_hospital_month
+    教学活动_入院教育覆盖率按年统计表	dws_teaching_activity_hospital_education_coverage_by_year
+    教学活动_入专业基地教育覆盖率按医院按年统计表	dws_teaching_activity_major_education_coverage_by_hospital_year
+    教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表	dws_teaching_activity_admission_students_activity_round_count_by_hospital_year
+    教学活动_轮转学员教学活动情况按医院按月统计表  dws_teaching_activity_round_student_activity_count_by_hospital_month
+    教学活动_轮转学员没有教学活动记录的人数按医院按月统计表	dws_teaching_activity_round_no_activity_student_count_by_hospital_month
+    教学活动_轮转学员不在本科室上课的学员数按医院按月统计表  dws_teaching_activity_round_no_class_student_count_by_hospital_month
+    教学活动_全科专业和门诊教学相关指标按医院按月统计表  dws_teaching_activity_general_practice_outpatient_education_by_hospital_month
+    教学活动_名称不规范相关指标按医院按专业按月统计表 dws_teaching_activity_name_irregular_count_by_hospital_major_month
+    教学活动_日均数据按医院按年统计表	dws_teaching_activity_daily_data_by_hospital_year
+    教学活动_年均数据按医院统计表 dws_teaching_activity_annual_data_by_hospital
+    教学活动_人次数据按医院按年统计表   dws_teaching_activity_person_times_by_hospital_year
+    教学活动_人次数据按年统计表  dws_teaching_activity_person_times_by_year
 
-    目前已有医院数据：
-        hainan_301              130     解放军总医院海南医院
-        hainan_first_affiliated   110     海南医学院第一附属医院
-        hainan_sanya_central    111     三亚中心医院（海南省第三人民医院）
-
-    目前已有表：
-        -- 从ods拉取原数据并清洗 --
-        教学活动_活动明细表 dwd_teaching_activity_detail_df
-        教学活动_参与人员明细表 dwd_teaching_activity_person_detail_df
-        教学活动_附件明细表   dwd_teaching_activity_file_detail_df
-
-        -- 基于清洗后的数据拉的宽表 --
-        教学活动_学员签到宽表  dwd_teaching_activity_student_sign_wide_df
-        教学活动_学员评价宽表  dwd_teaching_activity_student_evaluation_wide_df
-        教学活动_老师明细宽表    dwd_teaching_activity_teacher_detail_wide_df
-        教学活动_有招录医院的入院教育明细宽表 dwd_teaching_activity_admission_hospital_education_detail_wide_df
-        教学活动_轮转学员当月教学活动明细宽表  dwd_teaching_activity_round_student_detail_wide_df
-
-===================================================================*/
+====================================================================*/
 
 /*
     设置Hive执行引擎和MapReduce相关参数
@@ -30,600 +29,700 @@
 */
 
 -- 确保目标数据库存在
-CREATE DATABASE IF NOT EXISTS dwd_hainan_hospital_info;
+CREATE DATABASE IF NOT EXISTS dws_hainan_hospital_info;
 
 /*
-中文表名：教学活动_活动明细表
-数据库表名：dwd_teaching_activity_detail_df
+中文表名：教学活动_开展数量按医院按年统计表
+数据库表名：dws_teaching_activity_count_by_hospital_year
 源数据表：
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_301
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_first_affiliated
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_sanya_central
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 */
 
--- 教学活动_活动明细表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_detail_df;
+-- 教学活动_开展数量按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year;
 
--- 教学活动_活动明细表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+-- 教学活动_开展数量按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year
 (
-    activity_id        STRING COMMENT '教学活动ID',
-    activity_name      STRING COMMENT '教学活动名称',
-    activity_type_id   INT COMMENT '类型ID',
-    activity_type_name STRING COMMENT '类型名称',
+    hospital_id    INT COMMENT '医院ID',
+    hospital_name  STRING COMMENT '医院名称',
+    year           INT COMMENT '统计年份',
+    activity_count INT COMMENT '该年该医院开展的教学活动数量'
+) COMMENT '教学活动_开展数量按医院按年统计表';
+
+-- 教学活动_开展数量按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year;
+
+-- 教学活动_开展数量按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year
+SELECT hospital_id
+     , hospital_name
+     , year(start_time) AS year
+     , count(*)         AS activity_count
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, year(start_time);
+
+/*
+中文表名：教学活动_开展数量按医院按专业按月统计表
+数据库表名：dws_teaching_activity_count_by_hospital_major_month
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+*/
+
+-- 教学活动_开展数量按医院按专业按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_month;
+
+-- 教学活动_开展数量按医院按专业按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_month
+(
+    hospital_id    INT COMMENT '医院ID',
+    hospital_name  STRING COMMENT '医院名称',
+    major_id       INT COMMENT '专业ID',
+    major_name     STRING COMMENT '专业名称',
+    month          STRING COMMENT '统计月份',
+    activity_count INT COMMENT '该月该专业开展的教学活动数量'
+) COMMENT '教学活动_开展数量按医院按专业按月统计表';
+
+-- 教学活动_开展数量按医院按专业按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_month;
+
+-- 教学活动_开展数量按医院按专业按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_month
+SELECT hospital_id
+     , hospital_name
+     , major_id
+     , major_name
+     , date_format(start_time, 'yyyy-MM') AS month
+     , count(1)                           AS activity_count
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, major_id, major_name, date_format(start_time, 'yyyy-MM');
+
+/*
+中文表名：教学活动_开展数量按医院按专业按类型按月统计表
+数据库表名：dws_teaching_activity_count_by_hospital_major_type_month
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+*/
+
+-- 教学活动_开展数量按医院按专业按类型按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month;
+
+-- 教学活动_开展数量按医院按专业按类型按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month
+(
     hospital_id        INT COMMENT '医院ID',
     hospital_name      STRING COMMENT '医院名称',
     major_id           INT COMMENT '专业ID',
     major_name         STRING COMMENT '专业名称',
-    office_name        STRING COMMENT '所属科室',
-    start_time         TIMESTAMP COMMENT '开始时间',
-    end_time           TIMESTAMP COMMENT '结束时间',
-    duration_minutes   INT COMMENT '时长（分钟）',
-    participant_count  INT COMMENT '应评价人数'
-) COMMENT '教学活动_活动明细表';
+    activity_type_id   INT COMMENT '活动类型ID',
+    activity_type_name STRING COMMENT '活动类型名称',
+    month              STRING COMMENT '统计月份',
+    activity_count     INT COMMENT '该月该专业该类型开展的教学活动数量'
+) COMMENT '教学活动_开展数量按医院按专业按类型按月统计表';
 
--- 教学活动_活动明细表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_detail_df;
+-- 教学活动_开展数量按医院按专业按类型按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month;
 
--- 教学活动_活动明细表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
-SELECT DISTINCT concat(hospital_id, '_', trainid) AS activity_id
-              , activity_name
-              , activity_type_id
-              , activity_type_name
-              , hospital_id
-              , hospital_name
-              , major_id
-              , major_name
-              , office_name
-              , start_time
-              , end_time
-              , duration_minutes
-              , participant_count
-FROM (
-         -- 数据源 1: 130-解放军总医院海南医院
-         SELECT 130                                                                                   AS hospital_id
-              , '解放军总医院海南医院'                                                                AS hospital_name
-              , trainid
-              , regexp_replace(title, '[\r\n]', ' ')                                                  AS activity_name
-              , coalesce(spt_traintype_id, -1)                                                        AS activity_type_id
-              , coalesce(nullif(trim(regexp_replace(spt_traintype_name, '[\r\n]', ' ')), ''), '其他') AS activity_type_name
-              , coalesce(spt_major_id, -1)                                                            AS major_id
-              , coalesce(nullif(trim(regexp_replace(spt_major_name, '[\r\n]', ' ')), ''), '其他')     AS major_name
-              , coalesce(nullif(trim(regexp_replace(officename, '[\r\n]', ' ')), ''), '其他')         AS office_name
-              , starttime                                                                             AS start_time
-              , endtime                                                                               AS end_time
-              , teaching_activity_duration                                                            AS duration_minutes
-              , participant_count
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_301
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-           AND (spt_traintype_id IS NOT NULL OR spt_major_id IS NOT NULL)
-         UNION ALL
-         -- 数据源 2: 110-海南医学院第一附属医院
-         SELECT 110                                                                                   AS hospital_id
-              , '海南医学院第一附属医院'                                                              AS hospital_name
-              , trainid
-              , regexp_replace(title, '[\r\n]', ' ')                                                  AS activity_name
-              , coalesce(spt_traintype_id, -1)                                                        AS activity_type_id
-              , coalesce(nullif(trim(regexp_replace(spt_traintype_name, '[\r\n]', ' ')), ''), '其他') AS activity_type_name
-              , coalesce(spt_major_id, -1)                                                            AS major_id
-              , coalesce(nullif(trim(regexp_replace(spt_major_name, '[\r\n]', ' ')), ''), '其他')     AS major_name
-              , coalesce(nullif(trim(regexp_replace(officename, '[\r\n]', ' ')), ''), '其他')         AS office_name
-              , starttime                                                                             AS start_time
-              , endtime                                                                               AS end_time
-              , teaching_activity_duration                                                            AS duration_minutes
-              , participant_count
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_first_affiliated
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-         UNION ALL
-         -- 数据源 3: 111-三亚中心医院（海南省第三人民医院）
-         SELECT 111                                                                                   AS hospital_id
-              , '三亚中心医院（海南省第三人民医院）'                                                    AS hospital_name
-              , trainid
-              , regexp_replace(title, '[\r\n]', ' ')                                                  AS activity_name
-              , coalesce(spt_traintype_id, -1)                                                        AS activity_type_id
-              , coalesce(nullif(trim(regexp_replace(spt_traintype_name, '[\r\n]', ' ')), ''), '其他') AS activity_type_name
-              , coalesce(spt_major_id, -1)                                                            AS major_id
-              , coalesce(nullif(trim(regexp_replace(spt_major_name, '[\r\n]', ' ')), ''), '其他')     AS major_name
-              , coalesce(nullif(trim(regexp_replace(officename, '[\r\n]', ' ')), ''), '其他')         AS office_name
-              , starttime                                                                             AS start_time
-              , endtime                                                                               AS end_time
-              , teaching_activity_duration                                                            AS duration_minutes
-              , participant_count
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_sheet_data_sanya_central
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0) AS combined_data;
+-- 教学活动_开展数量按医院按专业按类型按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month
+SELECT hospital_id
+     , hospital_name
+     , major_id
+     , major_name
+     , activity_type_id
+     , activity_type_name
+     , date_format(start_time, 'yyyy-MM') AS month
+     , count(1)                           AS activity_count
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, major_id, major_name, activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM');
 
 /*
-中文表名：教学活动_参与人员明细表
-数据库表名：dwd_teaching_activity_person_detail_df
+中文表名：教学活动_参与学员数按医院按年统计表
+数据库表名：dws_teaching_activity_student_count_by_hospital_year
 源数据表：
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_301
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_first_affiliated
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_sanya_central
+    - dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
 */
 
--- 教学活动_参与人员明细表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df;
+-- 教学活动_参与学员数按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year;
 
--- 教学活动_参与人员明细表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df
+-- 教学活动_参与学员数按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year
 (
-    activity_id           STRING COMMENT '教学活动ID',
-    hospital_id           INT COMMENT '所属医院ID',
-    hospital_name         STRING COMMENT '所属医院',
-    person_id             INT COMMENT '人员ID',
-    person_name           STRING COMMENT '人员名字',
-    person_type           STRING COMMENT '人员类型',
-    professional_title    STRING COMMENT '专业职称',
-    evaluation_score_rate DOUBLE COMMENT '评价得分率',
-    is_signed             STRING COMMENT '是否签到'
-) COMMENT '教学活动参与人员明细表';
+    hospital_id   INT COMMENT '医院ID',
+    hospital_name STRING COMMENT '医院名称',
+    year          INT COMMENT '统计年份',
+    student_count INT COMMENT '该年该医院参与的学员数'
+) COMMENT '教学活动_参与学员数按医院按年统计表';
 
--- 教学活动_参与人员明细表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df;
+-- 教学活动_参与学员数按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year;
 
--- 教学活动_参与人员明细表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df
-SELECT DISTINCT concat(hospital_id, '_', trainid) AS activity_id
-              , hospital_id
-              , hospital_name
-              , person_id
-              , person_name
-              , person_type
-              , professional_title
-              , evaluation_score_rate
-              , is_signed
-FROM (
-         -- 数据源 1: 130-解放军总医院海南医院
-         SELECT 130                                                                                   AS hospital_id
-              , '解放军总医院海南医院'                                                                AS hospital_name
-              , trainid
-              , coalesce(personid, -1)                                                                AS person_id
-              , coalesce(nullif(trim(regexp_replace(personname, '[\r\n"]', ' ')), ''), '其他')        AS person_name
-              , coalesce(nullif(trim(regexp_replace(persontype, '[\r\n"]', ' ')), ''), '其他')        AS person_type
-              , coalesce(nullif(trim(regexp_replace(professionaltitle, '[\r\n"]', ' ')), ''), '其他') AS professional_title
-              , evalua_score_rate                                                                     AS evaluation_score_rate
-              , coalesce(nullif(trim(regexp_replace(is_sign, '[\r\n"]', ' ')), ''), '其他')           AS is_signed
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_301
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-         UNION ALL
-         -- 数据源 2: 110-海南医学院第一附属医院
-         SELECT 110                                                                                   AS hospital_id
-              , '海南医学院第一附属医院'                                                              AS hospital_name
-              , trainid
-              , coalesce(personid, -1)                                                                AS person_id
-              , coalesce(nullif(trim(regexp_replace(personname, '[\r\n"]', ' ')), ''), '其他')        AS person_name
-              , coalesce(nullif(trim(regexp_replace(persontype, '[\r\n"]', ' ')), ''), '其他')        AS person_type
-              , coalesce(nullif(trim(regexp_replace(professionaltitle, '[\r\n"]', ' ')), ''), '其他') AS professional_title
-              , evalua_score_rate                                                                     AS evaluation_score_rate
-              , coalesce(nullif(trim(regexp_replace(is_sign, '[\r\n"]', ' ')), ''), '其他')           AS is_signed
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_first_affiliated
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-         UNION ALL
-         -- 数据源 3: 111-三亚中心医院（海南省第三人民医院）
-         SELECT 111                                                                                   AS hospital_id
-              , '三亚中心医院（海南省第三人民医院）'                                                    AS hospital_name
-              , trainid
-              , coalesce(personid, -1)                                                                AS person_id
-              , coalesce(nullif(trim(regexp_replace(personname, '[\r\n"]', ' ')), ''), '其他')        AS person_name
-              , coalesce(nullif(trim(regexp_replace(persontype, '[\r\n"]', ' ')), ''), '其他')        AS person_type
-              , coalesce(nullif(trim(regexp_replace(professionaltitle, '[\r\n"]', ' ')), ''), '其他') AS professional_title
-              , evalua_score_rate                                                                     AS evaluation_score_rate
-              , coalesce(nullif(trim(regexp_replace(is_sign, '[\r\n"]', ' ')), ''), '其他')           AS is_signed
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_person_data_sanya_central
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0) AS combined_data;
+-- 教学活动_参与学员数按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year
+SELECT hospital_id
+     , hospital_name
+     , year(start_time)             AS year
+     , count(DISTINCT student_name) AS student_count
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, year(start_time);
 
 /*
-中文表名：教学活动_附件明细表
-数据库表名：dwd_teaching_activity_file_detail_df
+中文表名：教学活动_签到次数按医院按月统计表
+数据库表名：dws_teaching_activity_sign_count_by_hospital_month
 源数据表：
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_301
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_first_affiliated
-    - ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_sanya_central
+    - dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
 */
 
--- 教学活动_附件明细表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_file_detail_df;
+-- 教学活动_签到次数按医院按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_sign_count_by_hospital_month;
 
--- 教学活动_附件明细表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_file_detail_df
+-- 教学活动_签到次数按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_sign_count_by_hospital_month
 (
-    activity_id   STRING COMMENT '教学活动ID',
-    hospital_id   INT COMMENT '所属医院ID',
-    hospital_name STRING COMMENT '所属医院',
-    file_type     STRING COMMENT '附件类型',
-    file_url      STRING COMMENT '附件URL',
-    file_name     STRING COMMENT '附件名称'
-) COMMENT '教学活动附件明细表';
+    hospital_id   INT COMMENT '医院ID',
+    hospital_name STRING COMMENT '医院名称',
+    month         STRING COMMENT '月份',
+    sign_count    INT COMMENT '已签到次数',
+    no_sign_count INT COMMENT '未签到次数',
+    sign_rate     STRING COMMENT '签到率'
+) COMMENT '教学活动_签到次数按医院按月统计表';
 
--- 教学活动_附件明细表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_file_detail_df;
+-- 教学活动_签到次数按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_sign_count_by_hospital_month;
 
--- 教学活动_附件明细表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_file_detail_df
-SELECT DISTINCT concat(hospital_id, '_', trainid) AS activity_id
-              , hospital_id
-              , hospital_name
-              , file_type
-              , file_url
-              , file_name
-FROM (
-         -- 数据源 1: 130-解放军总医院海南医院
-         SELECT 130                                                                          AS hospital_id
-              , '解放军总医院海南医院'                                                       AS hospital_name
-              , trainid
-              , coalesce(nullif(trim(regexp_replace(filetype, '[\r\n"]', ' ')), ''), '其他') AS file_type
-              , trim(regexp_replace(url, '[\r\n"]', ' '))                                    AS file_url
-              , trim(regexp_replace(reffilename, '[\r\n"]', ' '))                            AS file_name
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_301
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-         UNION ALL
-         -- 数据源 2: 110-海南医学院第一附属医院
-         SELECT 110                                                                          AS hospital_id
-              , '海南医学院第一附属医院'                                                     AS hospital_name
-              , trainid
-              , coalesce(nullif(trim(regexp_replace(filetype, '[\r\n"]', ' ')), ''), '其他') AS file_type
-              , trim(regexp_replace(url, '[\r\n"]', ' '))                                    AS file_url
-              , trim(regexp_replace(reffilename, '[\r\n"]', ' '))                            AS file_name
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_first_affiliated
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0
-         UNION ALL
-         -- 数据源 3: 111-三亚中心医院（海南省第三人民医院）
-         SELECT 111                                                                          AS hospital_id
-              , '三亚中心医院（海南省第三人民医院）'                                           AS hospital_name
-              , trainid
-              , coalesce(nullif(trim(regexp_replace(filetype, '[\r\n"]', ' ')), ''), '其他') AS file_type
-              , trim(regexp_replace(url, '[\r\n"]', ' '))                                    AS file_url
-              , trim(regexp_replace(reffilename, '[\r\n"]', ' '))                            AS file_name
-         FROM ods_hainan_hospital_info.ods_hainan_teaching_activity_spt_train_file_info_sanya_central
-         WHERE trainid IS NOT NULL
-           AND trainid >= 0) AS combined_data;
+-- 教学活动_签到次数按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_sign_count_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , date_format(start_time, 'yyyy-MM')                                        AS month
+     , count(CASE WHEN is_signed = '已签到' THEN 1 END)                          AS sign_count
+     , count(CASE WHEN is_signed = '未签到' THEN 1 END)                          AS no_sign_count
+     , concat(round(count(CASE WHEN is_signed = '已签到' THEN 1 END) * 100 /
+                    (count(CASE WHEN is_signed = '已签到' THEN 1 END) +
+                     count(CASE WHEN is_signed = '未签到' THEN 1 END)), 2), '%') AS sign_rate
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, date_format(start_time, 'yyyy-MM');
 
 /*
-中文表名：教学活动_学员签到宽表
-数据库表名：dwd_teaching_activity_student_sign_wide_df
+中文表名：教学活动_评价次数统计按医院按月统计表
+数据库表名：dws_teaching_activity_evaluation_count_by_hospital_month
 源数据表：
-    - ods_hainan_hospital_info.dwd_teaching_activity_person_detail_df
-    - ods_hainan_hospital_info.dwd_teaching_activity_detail_df
+    - dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df
 */
 
--- 教学活动_学员签到宽表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df;
+-- 教学活动_评价次数统计按医院按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_month;
 
--- 教学活动_学员签到宽表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
+-- 教学活动_评价次数统计按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_month
 (
-    activity_id        STRING COMMENT '教学活动ID',
-    activity_name      STRING COMMENT '教学活动名称',
-    activity_type_id   INT COMMENT '教学活动类型ID',
-    activity_type_name STRING COMMENT '教学活动类型名称',
-    hospital_id        INT COMMENT '教学活动所属医院ID',
-    hospital_name      STRING COMMENT '教学活动所属医院',
-    major_id           INT COMMENT '教学活动所属专业ID',
-    major_name         STRING COMMENT '教学活动所属专业名称',
-    office_name        STRING COMMENT '教学活动所属科室',
-    start_time         TIMESTAMP COMMENT '教学活动开始时间',
-    end_time           TIMESTAMP COMMENT '教学活动结束时间',
-    student_id         INT COMMENT '学员ID',
-    student_name       STRING COMMENT '学员名字',
-    is_signed          STRING COMMENT '是否签到'
-) COMMENT '教学活动学员签到宽表';
+    hospital_id      INT COMMENT '医院ID',
+    hospital_name    STRING COMMENT '医院名称',
+    month            STRING COMMENT '统计月份',
+    evaluation_count INT COMMENT '实际评价总数',
+    total_count      INT COMMENT '应评价总数',
+    evaluation_rate  STRING COMMENT '评价回收率'
+) COMMENT '教学活动_评价次数统计按医院按月统计表';
 
--- 教学活动_学员签到宽表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df;
+-- 教学活动_评价次数统计按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_month;
 
--- 教学活动_学员签到宽表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
-SELECT DISTINCT a.activity_id        AS activity_id
-              , a.activity_name      AS activity_name
-              , a.activity_type_id   AS activity_type_id
-              , a.activity_type_name AS activity_type_name
-              , a.hospital_id        AS hospital_id
-              , a.hospital_name      AS hospital_name
-              , a.major_id           AS major_id
-              , a.major_name         AS major_name
-              , a.office_name        AS office_name
-              , a.start_time         AS start_time
-              , a.end_time           AS end_time
-              , p.person_id          AS student_id
-              , p.person_name        AS student_name
-              , p.is_signed          AS is_signed
-FROM dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df p
-         LEFT JOIN dwd_hainan_hospital_info.dwd_teaching_activity_detail_df a
-                   ON p.activity_id = a.activity_id
-WHERE p.person_type = '学员';
-
+-- 教学活动_评价次数统计按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_evaluation_count_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , date_format(start_time, 'yyyy-MM')                 AS month
+     , count(`if`(evaluation_score IS NOT NULL, 1, NULL)) AS evaluation_count
+     , count(1)                                           AS total_count
+     , concat(round(count(`if`(evaluation_score IS NOT NULL, 1, NULL)) * 100 / count(1), 2),
+              '%')                                        AS evaluation_rate
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df
+WHERE year(start_time) >= 2019
+GROUP BY hospital_id, hospital_name, date_format(start_time, 'yyyy-MM');
 
 /*
-中文表名：教学活动_学员评价宽表
-数据库表名：dwd_teaching_activity_student_evaluation_wide_df
+中文表名：教学活动_入院教育覆盖率按年统计表
+数据库表名：dws_teaching_activity_hospital_education_coverage_by_year
 源数据表：
-    - ods_hainan_hospital_info.dwd_teaching_activity_person_detail_df
-    - ods_hainan_hospital_info.dwd_teaching_activity_detail_df
+    - dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df
 */
--- 教学活动_学员评价宽表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df;
 
--- 教学活动_学员评价宽表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df
+-- 教学活动_入院教育覆盖率按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_hospital_education_coverage_by_year;
+
+-- 教学活动_入院教育覆盖率按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_hospital_education_coverage_by_year
 (
-    activity_id        STRING COMMENT '教学活动ID',
-    activity_name      STRING COMMENT '教学活动名称',
-    activity_type_id   INT COMMENT '教学活动类型ID',
-    activity_type_name STRING COMMENT '教学活动类型名称',
-    hospital_id        INT COMMENT '教学活动所属医院ID',
-    hospital_name      STRING COMMENT '教学活动所属医院',
-    major_id           INT COMMENT '教学活动所属专业ID',
-    major_name         STRING COMMENT '教学活动所属专业名称',
-    office_name        STRING COMMENT '教学活动所属科室',
-    start_time         TIMESTAMP COMMENT '教学活动开始时间',
-    end_time           TIMESTAMP COMMENT '教学活动结束时间',
-    student_id         INT COMMENT '学员ID',
-    student_name       STRING COMMENT '学员名字',
-    evaluation_score   DOUBLE COMMENT '评价得分',
-    participant_count  INT COMMENT '教学活动应评价人数'
-) COMMENT '教学活动学员评价宽表';
+    year                     INT COMMENT '统计年份',
+    hospital_admitted_count  INT COMMENT '该年实际招录学生的医院数',
+    hospital_education_count INT COMMENT '该年开展过入院教育的医院数',
+    coverage_education       STRING COMMENT '入院教育覆盖率'
+) COMMENT '教学活动_入院教育覆盖率按年统计表';
 
--- 教学活动_学员评价宽表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df;
+-- 教学活动_入院教育覆盖率按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_hospital_education_coverage_by_year;
 
--- 教学活动_学员评价宽表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_student_evaluation_wide_df
-SELECT DISTINCT a.activity_id           AS activity_id
-              , a.activity_name         AS activity_name
-              , a.activity_type_id      AS activity_type_id
-              , a.activity_type_name    AS activity_type_name
-              , a.hospital_id           AS hospital_id
-              , a.hospital_name         AS hospital_name
-              , a.major_id              AS major_id
-              , a.major_name            AS major_name
-              , a.office_name           AS office_name
-              , a.start_time            AS start_time
-              , a.end_time              AS end_time
-              , p.person_id             AS student_id
-              , p.person_name           AS student_name
-              , p.evaluation_score_rate AS evaluation_score
-              , a.participant_count     AS participant_count
-FROM dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df p
-         LEFT JOIN dwd_hainan_hospital_info.dwd_teaching_activity_detail_df a
-                   ON p.activity_id = a.activity_id
-WHERE p.person_type = '学员';
+-- 教学活动_入院教育覆盖率按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_hospital_education_coverage_by_year
+SELECT year
+     , count(DISTINCT hospital_id)                                                                                                 AS hospital_admitted_count
+     , count(DISTINCT `if`(activity_id IS NOT NULL, hospital_id, NULL))                                                            AS hospital_education_count
+     , concat(round(count(DISTINCT `if`(activity_id IS NOT NULL, hospital_id, NULL)) * 100 / count(DISTINCT hospital_id), 2), '%') AS coverage_education
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df
+GROUP BY year;
 
 /*
-中文表名：教学活动_老师明细宽表
-数据库表名：dwd_teaching_activity_teacher_detail_wide_df
-源数据表：
-    - ods_hainan_hospital_info.dwd_teaching_activity_person_detail_df
-    - ods_hainan_hospital_info.dwd_teaching_activity_detail_df
-*/
--- 教学活动_老师明细宽表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_teacher_detail_wide_df;
-
--- 教学活动_老师明细宽表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_teacher_detail_wide_df
-(
-    activity_id        STRING COMMENT '教学活动ID',
-    activity_name      STRING COMMENT '教学活动名称',
-    activity_type_id   INT COMMENT '教学活动类型ID',
-    activity_type_name STRING COMMENT '教学活动类型名称',
-    hospital_id        INT COMMENT '教学活动所属医院ID',
-    hospital_name      STRING COMMENT '教学活动所属医院',
-    major_id           INT COMMENT '教学活动所属专业ID',
-    major_name         STRING COMMENT '教学活动所属专业名称',
-    office_name        STRING COMMENT '教学活动所属科室',
-    start_time         TIMESTAMP COMMENT '教学活动开始时间',
-    end_time           TIMESTAMP COMMENT '教学活动结束时间',
-    teacher_id         INT COMMENT '老师ID',
-    teacher_name       STRING COMMENT '老师名字',
-    teacher_title      STRING COMMENT '老师职称'
-) COMMENT '教学活动老师明细宽表';
-
--- 教学活动_老师明细宽表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_teacher_detail_wide_df;
-
--- 教学活动_老师明细宽表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_teacher_detail_wide_df
-SELECT DISTINCT a.activity_id        AS activity_id
-              , a.activity_name      AS activity_name
-              , a.activity_type_id   AS activity_type_id
-              , a.activity_type_name AS activity_type_name
-              , a.hospital_id        AS hospital_id
-              , a.hospital_name      AS hospital_name
-              , a.major_id           AS major_id
-              , a.major_name         AS major_name
-              , a.office_name        AS office_name
-              , a.start_time         AS start_time
-              , a.end_time           AS end_time
-              , p.person_id          AS teacher_id
-              , p.person_name        AS teacher_name
-              , p.professional_title AS teacher_title
-FROM dwd_hainan_hospital_info.dwd_teaching_activity_person_detail_df p
-         LEFT JOIN dwd_hainan_hospital_info.dwd_teaching_activity_detail_df a
-                   ON p.activity_id = a.activity_id
-WHERE p.person_type = '老师';
-
-/*
-中文表名：教学活动_有招录医院的入院教育明细宽表
-数据库表名：dwd_teaching_activity_admission_hospital_education_detail_wide_df
+中文表名：教学活动_入专业基地教育覆盖率按医院按年统计表
+数据库表名：dws_teaching_activity_major_education_coverage_by_hospital_year
 源数据表：
     - dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students
     - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
 */
 
--- 教学活动_有招录医院的入院教育明细宽表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df;
+-- 教学活动_入专业基地教育覆盖率按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_major_education_coverage_by_hospital_year;
 
--- 教学活动_有招录医院的入院教育明细宽表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df
+-- 教学活动_入专业基地教育覆盖率按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_major_education_coverage_by_hospital_year
 (
-    year                       INT COMMENT '年份',
-    hospital_id                INT COMMENT '医院ID',
-    hospital_name              STRING COMMENT '医院名称',
-    admission_student_count    INT COMMENT '入院学生人数',
-    activity_id                STRING COMMENT '教学活动ID',
-    activity_name              STRING COMMENT '教学活动名称',
-    activity_type_id           INT COMMENT '教学活动类型ID',
-    activity_type_name         STRING COMMENT '教学活动类型名称',
-    activity_major_id          INT COMMENT '教学活动专业ID',
-    activity_major_name        STRING COMMENT '教学活动专业名称',
-    activity_office            STRING COMMENT '教学活动所属科室',
-    activity_start_time        TIMESTAMP COMMENT '教学活动开始时间',
-    activity_end_time          TIMESTAMP COMMENT '教学活动结束时间',
-    activity_duration_minutes  INT COMMENT '教学活动时长（分钟）',
-    activity_participant_count INT COMMENT '教学活动参与人数'
-) COMMENT '教学活动_有招录医院的入院教育明细宽表';
+    hospital_id           INT COMMENT '医院ID',
+    hospital_name         STRING COMMENT '医院名称',
+    year                  INT COMMENT '统计年份',
+    major_admitted_count  INT COMMENT '该年该医院实际招录的专业数',
+    major_education_count INT COMMENT '该年该医院开展过入专业基地教育的专业数',
+    coverage_education    STRING COMMENT '入专业基地教育覆盖率'
+) COMMENT '教学活动_入专业基地教育覆盖率按医院按年统计表';
 
--- 教学活动_有招录医院的入院教育明细宽表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df;
+-- 教学活动_入专业基地教育覆盖率按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_major_education_coverage_by_hospital_year;
 
--- 教学活动_有招录医院的入院教育明细宽表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_education_detail_wide_df
-SELECT ad.year
-     , ad.hospital_id
-     , ad.hospital_name
-     , ad.admission_student_count
-     , ac.activity_id
-     , ac.activity_name
-     , ac.activity_type_id
-     , ac.activity_type_name
-     , ac.activity_major_id
-     , ac.activity_major_name
-     , ac.activity_office
-     , ac.activity_start_time
-     , ac.activity_end_time
-     , ac.activity_duration_minutes
-     , ac.activity_participant_count
-FROM (SELECT admission_year             AS year
-           , training_base_id           AS hospital_id
-           , training_base              AS hospital_name
-           , count(DISTINCT student_id) AS admission_student_count
-      FROM dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students
-      WHERE admission_year >= 2019
-      GROUP BY admission_year, training_base_id, training_base) ad
-         LEFT JOIN (SELECT hospital_id
-                         , hospital_name
-                         , date_format(start_time, 'yyyy') AS year
-                         , activity_id
-                         , activity_name
-                         , activity_type_id
-                         , activity_type_name
-                         , major_id                        AS activity_major_id
-                         , major_name                      AS activity_major_name
-                         , office_name                     AS activity_office
-                         , start_time                      AS activity_start_time
-                         , end_time                        AS activity_end_time
-                         , duration_minutes                AS activity_duration_minutes
-                         , participant_count               AS activity_participant_count
-                    FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
-                    WHERE year(start_time) >= 2019
-                      AND activity_type_id = 14
-                      AND activity_type_name = '入院教育') ac
-                   ON ad.hospital_id = ac.hospital_id AND ad.hospital_name = ac.hospital_name AND ad.year = ac.year;
+-- 教学活动_入专业基地教育覆盖率按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_major_education_coverage_by_hospital_year
+SELECT hospital_id
+     , hospital_name
+     , year
+     , count(DISTINCT major_id)                                                                                              AS hospital_admitted_count
+     , count(DISTINCT `if`(activity_id IS NOT NULL, major_id, NULL))                                                         AS hospital_education_count
+     , concat(round(count(DISTINCT `if`(activity_id IS NOT NULL, major_id, NULL)) * 100 / count(DISTINCT major_id), 2), '%') AS coverage_education
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_admission_hospital_major_education_detail_wide_df
+GROUP BY hospital_id, hospital_name, year;
 
 /*
-中文表名：教学活动_轮转学员当月教学活动明细宽表
-数据库表名：dwd_teaching_activity_round_student_detail_wide_df
+中文表名：教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表
+数据库表名：dws_teaching_activity_admission_students_activity_round_count_by_hospital_year
 源数据表：
-    - ods_hainan_hospital_info.dwd_hainan_round_spt_round_total_info
-    - ods_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
+    - dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students
+    - dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df
+    - dwd_hainan_hospital_info.dwd_hainan_round_spt_round_total_info
 */
 
--- 教学活动_轮转学员当月教学活动明细宽表：删除旧的（如果存在）
-DROP TABLE IF EXISTS dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df;
+-- 教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_admission_students_activity_round_count_by_hospital_year;
 
--- 教学活动_轮转学员当月教学活动明细宽表：创建
-CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
+-- 教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_admission_students_activity_round_count_by_hospital_year
 (
-    hospital_id         INT COMMENT '医院ID',
-    hospital_name       STRING COMMENT '医院名称',
-    major_id            INT COMMENT '专业ID',
-    major_name          STRING COMMENT '专业名称',
-    student_id          INT COMMENT '学生ID',
-    student_name        STRING COMMENT '学生名字',
-    admission_year      INT COMMENT '招录年份',
-    rotation_office     STRING COMMENT '轮转科室',
-    rotation_start_time TIMESTAMP COMMENT '轮转开始时间',
-    rotation_end_time   TIMESTAMP COMMENT '轮转结束时间',
-    rotation_month      STRING COMMENT '轮转月份',
-    activity_id         STRING COMMENT '教学活动ID',
-    activity_name       STRING COMMENT '教学活动名称',
-    activity_type_id    INT COMMENT '教学活动类型ID',
-    activity_type_name  STRING COMMENT '教学活动类型名称',
-    activity_office     STRING COMMENT '教学活动所属科室',
-    activity_start_time TIMESTAMP COMMENT '教学活动开始时间',
-    activity_end_time   TIMESTAMP COMMENT '教学活动结束时间',
-    activity_month      STRING COMMENT '教学活动月份',
-    is_signed           STRING COMMENT '是否签到'
-) COMMENT '教学活动_轮转学员当月教学活动明细宽表';
+    hospital_id                        INT COMMENT '医院ID',
+    hospital_name                      STRING COMMENT '医院名称',
+    year                               STRING COMMENT '统计年份',
+    total_admitted_student_count       INT COMMENT '总招录学生数',
+    round_student_count                INT COMMENT '有轮转的学生数',
+    no_round_student_count             INT COMMENT '无轮转的学生数',
+    activity_student_count             INT COMMENT '有教学活动的学生数',
+    no_activity_student_count          INT COMMENT '无教学活动的学生数',
+    round_no_activity_student_count    INT COMMENT '有轮转无教学活动的学生数',
+    round_activity_student_count       INT COMMENT '有轮转有教学活动的学生数',
+    no_round_no_activity_student_count INT COMMENT '无轮转无教学活动的学生数'
+) COMMENT '教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表';
 
--- 教学活动_轮转学员当月教学活动明细宽表：清空数据
-TRUNCATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df;
+-- 教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_admission_students_activity_round_count_by_hospital_year;
 
--- 教学活动_轮转学员当月教学活动明细宽表：插入数据
-INSERT INTO dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
-SELECT r.hospital_id
-     , r.hospital_name
-     , r.major_id
-     , r.major_name
-     , s.student_id
-     , r.student_name
-     , r.admission_year
-     , r.rotation_office
-     , r.rotation_start_time
-     , r.rotation_end_time
-     , r.rotation_month
-     , s.activity_id
-     , s.activity_name
-     , s.activity_type_id
-     , s.activity_type_name
-     , s.office_name                        AS activity_office
-     , s.start_time                         AS activity_start_time
-     , s.end_time                           AS activity_end_time
-     , date_format(s.start_time, 'yyyy-MM') AS activity_month
-     , s.is_signed
+-- 教学活动_已招录学生教学活动记录和轮转情况按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_admission_students_activity_round_count_by_hospital_year
+SELECT ad.hospital_id                                                                                                 AS hospital_id
+     , ad.hospital_name                                                                                               AS hospital_name
+     , ad.admission_year                                                                                              AS year
+     , count(DISTINCT ad.student_name)                                                                                AS total_admitted_student_count
+     , count(DISTINCT CASE WHEN ro.student_name IS NOT NULL THEN ad.student_name END)                                 AS round_student_count
+     , count(DISTINCT CASE WHEN ro.student_name IS NULL THEN ad.student_name END)                                     AS no_round_student_count
+     , count(DISTINCT CASE WHEN ac.student_name IS NOT NULL THEN ad.student_name END)                                 AS activity_student_count
+     , count(DISTINCT CASE WHEN ac.student_name IS NULL THEN ad.student_name END)                                     AS no_activity_student_count
+     , count(DISTINCT CASE WHEN ro.student_name IS NOT NULL AND ac.student_name IS NULL THEN ad.student_name END)     AS round_no_activity_student_count
+     , count(DISTINCT CASE WHEN ro.student_name IS NOT NULL AND ac.student_name IS NOT NULL THEN ad.student_name END) AS round_activity_student_count
+     , count(DISTINCT CASE WHEN ro.student_name IS NULL AND ac.student_name IS NULL THEN ad.student_name END)         AS no_round_no_activity_student_count
 FROM (
-         -- 基础数据转换
-         SELECT personname                                 AS student_name
-              , CASE
-                    WHEN hospital = '301海南医院' THEN 130
-                    WHEN hospital = '海南医学院第一附属医院' THEN 110
-                    WHEN hospital = '三亚中心医院（海南省第三人民医院）' THEN 111
-                    ELSE -1
-             END                                           AS hospital_id
-              , CASE
-                    WHEN hospital = '301海南医院' THEN '解放军总医院海南医院'
-                    WHEN hospital = '海南医学院第一附属医院' THEN '海南医学院第一附属医院'
-                    WHEN hospital = '三亚中心医院（海南省第三人民医院）' THEN '三亚中心医院（海南省第三人民医院）'
-                    ELSE '其他'
-             END                                           AS hospital_name
-              , spt_major_id                               AS major_id
-              , spt_major_name                             AS major_name
-              , gradeyear                                  AS admission_year
-              , officename                                 AS rotation_office
-              , starttime                                  AS rotation_start_time
-              , endtime                                    AS rotation_end_time
-              , date_format(add_months(to_date(concat(date_format(starttime, 'yyyy-MM'), '-01'))
-                                , n_table.num), 'yyyy-MM') AS rotation_month
-         FROM dwd_hainan_hospital_info.dwd_hainan_round_spt_round_total_info
-                  LATERAL VIEW explode(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) n_table AS num
-         WHERE
-           -- 修正条件：确保生成的月份不超过实际的轮转月数
-             n_table.num <= floor(months_between(endtime, starttime))
-           AND starttime IS NOT NULL
-           AND endtime IS NOT NULL
-           AND starttime <= endtime) r
-         LEFT JOIN dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df s
-                   ON r.student_name = s.student_name
-                       AND r.hospital_id = s.hospital_id
-                       AND r.hospital_name = s.hospital_name
-                       AND r.major_id = s.major_id
-                       AND r.major_name = s.major_name
-                       AND r.rotation_month = date_format(s.start_time, 'yyyy-MM');
+         -- 招录的学生数据
+         SELECT DISTINCT training_base_id  AS hospital_id
+                       , training_base     AS hospital_name
+                       , specialty_base_id AS major_id
+                       , specialty_base    AS major_name
+                       , admission_year
+                       , student_name
+         FROM dwd_hainan_hospital_info.dwd_hainan_admission_data_view_students) ad
+         LEFT JOIN (
+    -- 轮转的学生数据
+    SELECT DISTINCT CASE
+                        WHEN hospital = '301海南医院' THEN 130
+                        WHEN hospital = '海南医学院第一附属医院' THEN 110
+                        WHEN hospital = '三亚中心医院（海南省第三人民医院）' THEN 111
+                        ELSE -1
+        END                        AS hospital_id
+                  , CASE
+                        WHEN hospital = '301海南医院' THEN '解放军总医院海南医院'
+                        WHEN hospital = '海南医学院第一附属医院' THEN '海南医学院第一附属医院'
+                        WHEN hospital = '三亚中心医院（海南省第三人民医院）' THEN '三亚中心医院（海南省第三人民医院）'
+                        ELSE '其他'
+        END                        AS hospital_name
+                  , spt_major_id   AS major_id
+                  , spt_major_name AS major_name
+                  , personname     AS student_name
+    FROM dwd_hainan_hospital_info.dwd_hainan_round_spt_round_total_info) ro
+                   ON ad.hospital_id = ro.hospital_id
+                       AND ad.hospital_name = ro.hospital_name
+                       AND ad.major_id = ro.major_id
+                       AND ad.major_name = ro.major_name
+                       AND ad.student_name = ro.student_name
+         LEFT JOIN(
+    -- 获取有教学活动的学生数据（不能用id，因为两张表的ID不一样，后面无法关联）
+    SELECT DISTINCT hospital_id
+                  , hospital_name
+                  , major_id
+                  , major_name
+                  , student_name
+    FROM dwd_hainan_hospital_info.dwd_teaching_activity_student_sign_wide_df) ac
+                  ON ad.hospital_id = ac.hospital_id
+                      AND ad.hospital_name = ac.hospital_name
+                      AND ad.major_id = ac.major_id
+                      AND ad.major_name = ac.major_name
+                      AND ad.student_name = ac.student_name
+WHERE ad.admission_year >= 2019
+GROUP BY ad.hospital_id, ad.hospital_name, ad.admission_year;
+
+/*
+中文表名：教学活动_轮转学员教学活动情况按医院按月统计表
+数据库表名：dws_teaching_activity_round_student_activity_count_by_hospital_month
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
+*/
+
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：删除旧的（如果存在）
+
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month;
+
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
+(
+    hospital_id       INT COMMENT '医院ID',
+    hospital_name     STRING COMMENT '医院名称',
+    month             STRING COMMENT '月份',
+    student_name      STRING COMMENT '学生姓名',
+    rotation_office   STRING COMMENT '轮转科室',
+    activity_count    INT COMMENT '教学活动次数',
+    class_count       INT COMMENT '本科室上课次数',
+    other_class_count INT COMMENT '其他科室上课次数'
+) COMMENT '教学活动_轮转学员教学活动情况按医院按月统计表';
+
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month;
+
+-- 教学活动_轮转学员教学活动情况按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , rotation_month                                                                    AS month
+     , student_name
+     , rotation_office
+     , count(DISTINCT activity_id)                                                       AS activity_count
+     , count(DISTINCT CASE WHEN rotation_office = activity_office THEN activity_id END)  AS class_count
+     , count(DISTINCT CASE WHEN rotation_office != activity_office THEN activity_id END) AS other_class_count
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
+WHERE rotation_month >= '2019-01'
+GROUP BY hospital_id, hospital_name, rotation_month, student_name, rotation_office;
+
+/*
+中文表名：教学活动_轮转学员没有教学活动记录的人数按医院按月统计表
+数据库表名：dws_teaching_activity_round_no_activity_student_count_by_hospital_month
+源数据表：
+    - dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
+*/
+
+-- 教学活动_轮转学员没有教学活动记录的人数按医院按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_round_no_activity_student_count_by_hospital_month;
+
+-- 教学活动_轮转学员没有教学活动记录的人数按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_no_activity_student_count_by_hospital_month
+(
+
+    hospital_id               INT COMMENT '医院ID',
+    hospital_name             STRING COMMENT '医院名称',
+    month                     STRING COMMENT '月份',
+    total_round_student_count INT COMMENT '该月总轮转学员数',
+    no_activity_student_count INT COMMENT '该月没有教学活动记录的学员数',
+    no_activity_student_rate  STRING COMMENT '该月没有教学活动记录的学员比例'
+) COMMENT '教学活动_轮转学员没有教学活动记录的人数按医院按月统计表';
+
+-- 教学活动_轮转学员没有教学活动记录的人数按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_no_activity_student_count_by_hospital_month;
+
+-- 教学活动_轮转学员没有教学活动记录的人数按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_round_no_activity_student_count_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , month
+     , count(DISTINCT student_name)                                                                                            AS total_round_student_count
+     , count(CASE WHEN activity_count = 0 THEN student_name END)                                                               AS no_activity_student_count
+     , concat(round(count(CASE WHEN activity_count = 0 THEN student_name END) * 100.0 / count(DISTINCT student_name), 2), '%') AS no_activity_student_rate
+FROM dws_hainan_hospital_info.dws_teaching_activity_round_student_activity_count_by_hospital_month
+WHERE month >= '2019-01'
+GROUP BY hospital_id, hospital_name, month;
+
+/*
+中文表名：教学活动_轮转学员不在本科室上课的学员数按医院按月统计表
+数据库表名：dws_teaching_activity_round_no_class_student_count_by_hospital_month
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
+*/
+
+-- 教学活动_轮转学员不在本科室上课的学员数按医院按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_round_no_class_student_count_by_hospital_month;
+
+-- 教学活动_轮转学员不在本科室上课的学员数按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_no_class_student_count_by_hospital_month
+(
+    hospital_id               INT COMMENT '医院ID',
+    hospital_name             STRING COMMENT '医院名称',
+    month                     STRING COMMENT '月份',
+    total_round_student_count INT COMMENT '该月总轮转学员数',
+    no_class_student_count    INT COMMENT '该月不在本科室上课的学员数',
+    no_class_student_rate     STRING COMMENT '该月不在本科室上课的学员比例'
+) COMMENT '教学活动_轮转学员不在本科室上课的学员数按医院按月统计表';
+
+-- 教学活动_轮转学员不在本科室上课的学员数按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_round_no_class_student_count_by_hospital_month;
+
+-- 教学活动_轮转学员不在本科室上课的学员数按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_round_no_class_student_count_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , rotation_month                                                                     AS month
+     , count(DISTINCT student_name)                                                       AS total_round_student_count
+     , count(DISTINCT CASE WHEN rotation_office != activity_office THEN student_name END) AS no_class_student_count
+     , concat(round(count(DISTINCT CASE WHEN rotation_office != activity_office THEN student_name END) * 100.0 /
+                    count(DISTINCT student_name), 2), '%')                                AS no_class_student_rate
+FROM dwd_hainan_hospital_info.dwd_teaching_activity_round_student_detail_wide_df
+WHERE rotation_month >= '2019-01'
+GROUP BY hospital_id, hospital_name, rotation_month;
+
+/*
+中文表名：教学活动_全科专业和门诊教学相关指标按医院按月统计表
+数据库表名：dws_teaching_activity_general_practice_outpatient_education_by_hospital_month
+源数据表：
+    - dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month
+*/
+
+-- 教学活动_全科专业和门诊教学相关指标按医院按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_general_practice_outpatient_education_by_hospital_month;
+
+-- 教学活动_全科专业和门诊教学相关指标按医院按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_general_practice_outpatient_education_by_hospital_month
+(
+    hospital_id                              INT COMMENT '医院ID',
+    hospital_name                            STRING COMMENT '医院名称',
+    month                                    STRING COMMENT '月份',
+    general_practice_outpatient_count        INT COMMENT '全科专业开展门诊教学数量',
+    is_general_practice_outpatient           INT COMMENT '全科专业是否开了门诊教学',
+    outpatient_teaching_specialties          INT COMMENT '开展门诊教学专业数（除全科）',
+    is_outpatient_teaching_specialties_valid INT COMMENT '开展门诊教学专业数（除全科）是否合格'
+) COMMENT '教学活动_全科专业和门诊教学相关指标按医院按月统计表';
+
+-- 教学活动_全科专业和门诊教学相关指标按医院按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_general_practice_outpatient_education_by_hospital_month;
+
+-- 教学活动_全科专业和门诊教学相关指标按医院按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_general_practice_outpatient_education_by_hospital_month
+SELECT hospital_id
+     , hospital_name
+     , month
+     , sum(CASE WHEN major_id = 18 AND major_name = '全科医学科' AND activity_type_id = 22 AND activity_type_name = '门诊教学' THEN activity_count ELSE 0 END) AS general_practice_outpatient_count
+     , CASE
+           WHEN sum(CASE WHEN major_id = 18 AND major_name = '全科医学科' AND activity_type_id = 22 AND activity_type_name = '门诊教学' THEN activity_count ELSE 0 END) > 0 THEN 1
+           ELSE 0 END                                                                                                                                          AS is_general_practice_outpatient
+     , sum(CASE
+               WHEN major_id != 18 AND major_name != '全科医学科' AND activity_type_id = 22 AND activity_type_name = '门诊教学' THEN major_id
+               ELSE 0 END)                                                                                                                                     AS outpatient_teaching_specialties
+     , CASE
+           WHEN sum(CASE WHEN major_id != 18 AND major_name != '全科医学科' AND activity_type_id = 22 AND activity_type_name = '门诊教学' THEN major_id ELSE 0 END) >= 2 THEN 1
+           ELSE 0 END                                                                                                                                          AS is_outpatient_teaching_specialties_valid
+FROM dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month
+WHERE month >= '2019-01'
+GROUP BY hospital_id, hospital_name, month;
+
+/*
+中文表名：教学活动_名称不规范相关指标按医院按专业按月统计表
+数据库表名：dws_teaching_activity_name_irregular_count_by_hospital_major_month
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+*/
+
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month;
+
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month
+(
+    hospital_id                   INT COMMENT '医院ID',
+    hospital_name                 STRING COMMENT '医院名称',
+    major_id                      INT COMMENT '专业ID',
+    major_name                    STRING COMMENT '专业名称',
+    month                         STRING COMMENT '月份',
+    activity_name_type_same_count INT COMMENT '本月内单个教学活动的活动名称和类型名称重名的教学活动数',
+    activity_name_type_same_total INT COMMENT '本月内不同教学活动但同类型同名称的教学活动数'
+) COMMENT '教学活动_名称不规范相关指标按医院按专业按月统计表';
+
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month;
+
+-- 教学活动_名称不规范相关指标按医院按专业按月统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_name_irregular_count_by_hospital_major_month
+SELECT grouped.hospital_id
+     , grouped.hospital_name
+     , grouped.major_id
+     , grouped.major_name
+     , grouped.month
+     , sum(CASE WHEN grouped.activity_name = grouped.activity_type_name THEN grouped.activity_count ELSE 0 END) AS activity_name_type_same_count
+     , sum(CASE WHEN grouped.activity_count > 1 THEN grouped.activity_count ELSE 0 END)                         AS activity_name_type_same_total
+FROM (SELECT hospital_id
+           , hospital_name
+           , major_id
+           , major_name
+           , date_format(start_time, 'yyyy-MM') AS month
+           , activity_name
+           , activity_type_name
+           , count(DISTINCT activity_id)        AS activity_count
+      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+      GROUP BY hospital_id, hospital_name, major_id, major_name, date_format(start_time, 'yyyy-MM'), activity_name, activity_type_name) AS grouped
+WHERE grouped.month >= '2019-01'
+GROUP BY grouped.hospital_id, grouped.hospital_name, grouped.major_id, grouped.major_name, grouped.month;
+
+/*
+中文表名：教学活动_日均数据按医院按年统计表
+数据库表名：dws_teaching_activity_daily_data_by_hospital_year
+源数据表：
+    - dwd_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year
+    - dwd_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year
+*/
+
+-- 教学活动_日均数据按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_daily_data_by_hospital_year;
+
+-- 教学活动_日均数据按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_daily_data_by_hospital_year
+(
+    hospital_id    INT COMMENT '医院ID',
+    hospital_name  STRING COMMENT '医院名称',
+    year           INT COMMENT '统计年份',
+    daily_activity DOUBLE COMMENT '日均教学活动数量',
+    daily_student  DOUBLE COMMENT '日均参与学员数'
+) COMMENT '教学活动_日均数据按医院按年统计表';
+
+-- 教学活动_日均数据按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_daily_data_by_hospital_year;
+
+-- 教学活动_日均数据按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_daily_data_by_hospital_year
+SELECT ac.hospital_id
+     , ac.hospital_name
+     , ac.year
+     , round(ac.activity_count / 365, 2) AS daily_activity
+     , round(sc.student_count / 365, 2)  AS daily_student
+FROM dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_year ac
+         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year sc
+                   ON ac.hospital_id = sc.hospital_id
+                       AND ac.hospital_name = sc.hospital_name
+                       AND ac.year = sc.year
+WHERE ac.year > '2019';
+
+/*
+中文表名：教学活动_人次数据按医院按年统计表
+数据库表名：dws_teaching_activity_person_times_by_hospital_year
+源数据表：
+    - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+    - dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year
+*/
+
+-- 教学活动_人次数据按医院按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year;
+
+-- 教学活动_人次数据按医院按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year
+(
+    hospital_id          INT COMMENT '医院ID',
+    hospital_name        STRING COMMENT '医院名称',
+    year                 INT COMMENT '统计年份',
+    total_person_times   INT COMMENT '总人次',
+    student_count        INT COMMENT '学生人数',
+    average_person_times DOUBLE COMMENT '平均人次'
+) COMMENT '教学活动_人次数据按医院按年统计表';
+
+-- 教学活动_人次数据按医院按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year;
+
+-- 教学活动_人次数据按医院按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year
+SELECT ac.hospital_id
+     , ac.hospital_name
+     , ac.year
+     , ac.total_person_times
+     , sc.student_count
+     , round(ac.total_person_times / sc.student_count, 2) AS average_person_times
+FROM (SELECT hospital_id
+           , hospital_name
+           , year(start_time)       AS year
+           , sum(participant_count) AS total_person_times
+      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+      WHERE year(start_time) >= 2019
+      GROUP BY hospital_id, hospital_name, year(start_time)) ac
+         LEFT JOIN dws_hainan_hospital_info.dws_teaching_activity_student_count_by_hospital_year sc
+                   ON ac.hospital_id = sc.hospital_id AND ac.hospital_name = sc.hospital_name AND ac.year = sc.year
+WHERE ac.year >= '2019';
+
+/*
+中文表名：教学活动_人次数据按年统计表
+数据库表名：dws_teaching_activity_person_times_by_year
+源数据表：
+    - dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year
+*/
+
+-- 教学活动_人次数据按年统计表：删除旧的（如果存在）
+DROP TABLE IF EXISTS dws_hainan_hospital_info.dws_teaching_activity_person_times_by_year;
+
+-- 教学活动_人次数据按年统计表：创建
+CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_person_times_by_year
+(
+    year                 INT COMMENT '统计年份',
+    total_person_times   INT COMMENT '总人次',
+    student_count        INT COMMENT '学生人数',
+    average_person_times DOUBLE COMMENT '平均人次'
+) COMMENT '教学活动_人次数据按年统计表';
+
+-- 教学活动_人次数据按年统计表：清空数据
+TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_person_times_by_year;
+
+-- 教学活动_人次数据按年统计表：插入数据
+INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_person_times_by_year
+SELECT year
+     , sum(total_person_times)                                AS total_person_times
+     , sum(student_count)                                     AS student_count
+     , round(sum(total_person_times) / sum(student_count), 2) AS average_person_times
+FROM dws_hainan_hospital_info.dws_teaching_activity_person_times_by_hospital_year
+WHERE year >= '2019'
+GROUP BY year;
+
+
