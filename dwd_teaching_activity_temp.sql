@@ -60,7 +60,7 @@ CREATE TABLE dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
     start_time         TIMESTAMP COMMENT '开始时间',
     end_time           TIMESTAMP COMMENT '结束时间',
     duration_minutes   INT COMMENT '时长（分钟）',
-    participant_count  INT COMMENT '应评价人数'
+    participant_count  INT COMMENT '参与人数'
 ) COMMENT '教学活动_活动明细表';
 
 -- 教学活动_活动明细表：清空数据
