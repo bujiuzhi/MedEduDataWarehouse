@@ -117,6 +117,7 @@ FROM (
 数据库表名：dws_teaching_activity_count_by_hospital_major_type_month
 源数据表：
     - dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+    - dim_hainan_hospital_info.dim_teacher_activity_count_standard_by_hospital_major
 */
 
 -- 教学活动_开展数量按医院按专业按类型按月统计表：删除旧的（如果存在）
@@ -132,7 +133,9 @@ CREATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_ma
     activity_type_id   INT COMMENT '活动类型ID',
     activity_type_name STRING COMMENT '活动类型名称',
     month              STRING COMMENT '统计月份',
-    activity_count     INT COMMENT '该月该专业该类型开展的教学活动数量'
+    activity_count     INT COMMENT '该月该专业该类型开展的教学活动数量',
+    standard_count     INT COMMENT '该类型开展数量标准',
+    is_standard        INT COMMENT '是否达到标准'
 ) COMMENT '教学活动_开展数量按医院按专业按类型按月统计表';
 
 -- 教学活动_开展数量按医院按专业按类型按月统计表：清空数据
@@ -140,17 +143,32 @@ TRUNCATE TABLE dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_
 
 -- 教学活动_开展数量按医院按专业按类型按月统计表：插入数据
 INSERT INTO dws_hainan_hospital_info.dws_teaching_activity_count_by_hospital_major_type_month
-SELECT hospital_id
-     , hospital_name
-     , major_id
-     , major_name
-     , activity_type_id
-     , activity_type_name
-     , date_format(start_time, 'yyyy-MM') AS month
-     , count(1)                           AS activity_count
-FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
-WHERE year(start_time) >= 2019
-GROUP BY hospital_id, hospital_name, major_id, major_name, activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM');
+SELECT ad.hospital_id
+     , ad.hospital_name
+     , ad.major_id
+     , ad.major_name
+     , ad.activity_type_id
+     , ad.activity_type_name
+     , ad.month
+     , ad.activity_count
+     , st.standard_count
+     , `if`(activity_count >= st.standard_count OR st.standard_count IS NULL, 1, 0) AS is_standard
+FROM (SELECT hospital_id
+           , hospital_name
+           , major_id
+           , major_name
+           , activity_type_id
+           , activity_type_name
+           , date_format(start_time, 'yyyy-MM') AS month
+           , count(DISTINCT activity_id)        AS activity_count
+      FROM dwd_hainan_hospital_info.dwd_teaching_activity_detail_df
+      WHERE year(start_time) >= 2019
+      GROUP BY hospital_id, hospital_name, major_id, major_name, activity_type_id, activity_type_name, date_format(start_time, 'yyyy-MM')) ad
+         LEFT JOIN dim_hainan_hospital_info.dim_teacher_activity_count_standard_by_hospital_major st
+                   ON ad.major_id = st.major_id
+                       AND ad.major_name = st.major_name
+                       AND ad.activity_type_id = st.activity_type_id
+                       AND ad.activity_type_name = st.activity_type_name;
 
 /*
 中文表名：教学活动_入院教育覆盖率按年统计表
